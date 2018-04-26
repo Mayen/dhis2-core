@@ -45,6 +45,7 @@ import org.hisp.dhis.setting.SettingKey;
 import org.hisp.dhis.setting.SystemSettingManager;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,14 +95,14 @@ public class FileResourceCleanUpJob
         fileResourceService.getOrphanedFileResources()
             .forEach( fr -> {
                 deletedOrphans.add( ImmutablePair.of( fr.getName(), fr.getUid() ) );
-                fileResourceService.deleteFileResource( fr.getUid() );
+                safeDelete( fr.getUid() );
             } );
 
         if ( retentionStrategy != FileResourceRetentionStrategy.FOREVER )
         {
             deletedAuditFiles = getExpiredFileResources( retentionStrategy );
 
-            deletedAuditFiles.forEach( pair -> fileResourceService.deleteFileResource( pair.getRight() ) );
+            deletedAuditFiles.forEach( pair -> safeDelete( pair.getRight() ) );
         }
 
         if ( !deletedOrphans.isEmpty() )
@@ -146,6 +147,27 @@ public class FileResourceCleanUpJob
         sb.deleteCharAt( sb.lastIndexOf( "," ) ).append( "]" );
 
         return sb.toString();
+    }
+
+    private void safeDelete( String resourceId )
+    {
+        try
+        {
+            fileResourceService.deleteFileResource( resourceId );
+        }
+        catch ( DataIntegrityViolationException e )
+        {
+            FileResource fr = fileResourceService.getFileResource( resourceId );
+
+            if ( fr.isAssigned() )
+            {
+                throw e;
+            }
+
+            fr.setAssigned( true );
+            fileResourceService.updateFileResource( fr );
+            log.info( String.format( "corrected the assigned status of fileresource '%s'", resourceId ) );
+        }
     }
 
 }

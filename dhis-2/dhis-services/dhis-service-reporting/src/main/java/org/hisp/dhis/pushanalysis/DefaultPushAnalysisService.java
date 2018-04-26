@@ -437,12 +437,13 @@ public class DefaultPushAnalysisService
             FileResourceDomain.PUSH_ANALYSIS
         );
 
-        fileResourceService.saveFileResource( fileResource, bytes );
-
         ExternalFileResource externalFileResource = new ExternalFileResource();
 
         externalFileResource.setFileResource( fileResource );
         externalFileResource.setExpires( null );
+
+        fileResource.setAssigned( true );
+        fileResourceService.saveFileResource( fileResource, bytes );
 
         String accessToken = externalFileResourceService.saveExternalFileResource( externalFileResource );
 
