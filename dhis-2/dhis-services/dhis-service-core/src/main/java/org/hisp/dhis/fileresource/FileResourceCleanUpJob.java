@@ -46,6 +46,7 @@ import org.hisp.dhis.setting.SystemSettingManager;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,6 +85,7 @@ public class FileResourceCleanUpJob
     }
 
     @Override
+    @Transactional
     public void execute( JobConfiguration jobConfiguration )
     {
         FileResourceRetentionStrategy retentionStrategy = (FileResourceRetentionStrategy) systemSettingManager.getSystemSetting(SettingKey.FILE_RESOURCE_RETENTION_STRATEGY);

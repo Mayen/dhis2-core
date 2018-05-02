@@ -29,7 +29,7 @@ package org.hisp.dhis.fileresource;
  */
 
 import com.google.common.io.ByteSource;
-import org.hisp.dhis.common.IdentifiableObjectStore;
+import org.hisp.dhis.common.hibernate.HibernateIdentifiableObjectStore;
 import org.hisp.dhis.scheduling.SchedulingManager;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
@@ -59,9 +59,9 @@ public class DefaultFileResourceService
     // Dependencies
     // -------------------------------------------------------------------------
 
-    private IdentifiableObjectStore<FileResource> fileResourceStore;
+    private HibernateIdentifiableObjectStore<FileResource> fileResourceStore;
 
-    public void setFileResourceStore( IdentifiableObjectStore<FileResource> fileResourceStore )
+    public void setFileResourceStore( HibernateIdentifiableObjectStore<FileResource> fileResourceStore )
     {
         this.fileResourceStore = fileResourceStore;
     }
@@ -114,12 +114,14 @@ public class DefaultFileResourceService
     }
 
     @Override
+    @Transactional
     public String saveFileResource( FileResource fileResource, File file )
     {
         return saveFileResourceInternal( fileResource, () -> fileResourceContentStore.saveFileResourceContent( fileResource, file ) );
     }
 
     @Override
+    @Transactional
     public String saveFileResource( FileResource fileResource, byte[] bytes )
     {
         return saveFileResourceInternal( fileResource, () -> fileResourceContentStore.saveFileResourceContent( fileResource, bytes ) );
@@ -186,7 +188,7 @@ public class DefaultFileResourceService
     {
         fileResource.setStorageStatus( FileResourceStorageStatus.PENDING );
         fileResourceStore.save( fileResource );
-        updateFileResource( fileResource );
+        fileResourceStore.flush();
 
         final ListenableFuture<String> saveContentTask = schedulingManager.executeJob( saveCallable );
 
